@@ -7,7 +7,9 @@ export function formatDate(iso: string) {
 }
 
 export function isUpcoming(iso: string) {
-  return new Date(iso) >= new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(iso) >= today;
 }
 
 export function studioInitials(studioName: string) {

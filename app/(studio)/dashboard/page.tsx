@@ -109,6 +109,8 @@ export default async function DashboardPage() {
             date: { gte: today, lt: tomorrow },
             status: { in: ["CONFIRMED", "PENDING"] },
           },
+          include: { overrideInstructor: { select: { name: true } } },
+          take: 1,
         },
       },
       orderBy: { startTime: "asc" },
@@ -211,6 +213,7 @@ export default async function DashboardPage() {
     startTime: s.startTime,
     room: { name: s.room.name },
     instructor: s.instructor ? { name: s.instructor.name } : null,
+    overrideInstructor: s.bookings[0]?.overrideInstructor ?? null,
     maxPax: s.maxPax,
     bookingCount: s.bookings.length,
   }));

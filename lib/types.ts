@@ -137,6 +137,7 @@ export type TodayClassDTO = {
   startTime: string;
   room: { name: string };
   instructor: { name: string } | null;
+  overrideInstructor: { name: string } | null;
   maxPax: number;
   bookingCount: number;
 };
