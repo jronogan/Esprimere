@@ -146,10 +146,16 @@ export default function OverviewTab({
                     <td className={tdCls + " pr-3 text-gray-500"}>
                       {c.room.name}
                     </td>
-                    <td
-                      className={`${tdCls} pr-3 ${c.instructor ? "text-gray-500" : "text-[#A32D2D]"}`}
-                    >
-                      {c.instructor?.name ?? "Unassigned"}
+                    <td className={`${tdCls} pr-3`}>
+                      {c.overrideInstructor ? (
+                        <span className="text-[#A32D2D]">
+                          {c.overrideInstructor.name}
+                        </span>
+                      ) : c.instructor ? (
+                        <span className="text-gray-500">{c.instructor.name}</span>
+                      ) : (
+                        <span className="text-[#A32D2D]">Unassigned</span>
+                      )}
                     </td>
                     <td className={tdCls + " pr-3 text-gray-500"}>
                       {c.bookingCount} / {c.maxPax}

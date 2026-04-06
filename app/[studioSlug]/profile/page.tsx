@@ -15,12 +15,14 @@ export default async function ProfilePage({
 
   if (!session?.user) redirect(`/${studioSlug}/login`);
 
-  const [studio, user, userPasses, classBookings, studioBookings, passPackages] =
+  const studio = await prisma.studio.findUnique({ where: { slug: studioSlug } });
+  if (!studio) notFound();
+
+  const [user, userPasses, classBookings, studioBookings, passPackages] =
     await Promise.all([
-      prisma.studio.findUnique({ where: { slug: studioSlug } }),
       prisma.user.findUnique({ where: { id: session.user.id } }),
       prisma.userPass.findMany({
-        where: { userId: session.user.id, studioId: { not: undefined } },
+        where: { userId: session.user.id, studioId: studio.id },
         include: { passPackage: true },
         orderBy: { createdAt: "desc" },
       }),
@@ -37,12 +39,12 @@ export default async function ProfilePage({
         orderBy: { date: "desc" },
       }),
       prisma.passPackage.findMany({
-        where: { isActive: true },
+        where: { studioId: studio.id, isActive: true },
         orderBy: { price: "asc" },
       }),
     ]);
 
-  if (!studio || !user) notFound();
+  if (!user) notFound();
 
   // Serialize Decimal / Date types before passing to client
   return (
@@ -95,6 +97,7 @@ export default async function ProfilePage({
         price: Number(p.price),
         expiryDays: p.expiryDays,
         type: p.type,
+        isActive: p.isActive,
       }))}
     />
   );
