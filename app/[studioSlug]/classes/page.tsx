@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { userInitials } from "@/lib/functions";
 import { BookingStatus } from "@/app/generated/prisma/client";
 import ClassesClient from "./ClassesClient";
+import { ClassOccurrenceDTO } from "@/lib/types";
 
 const DOW_JS: Record<string, number> = {
   SUNDAY: 0,
@@ -43,43 +44,48 @@ export default async function ClassesPage({
   const windowEnd = new Date(days[2]);
   windowEnd.setHours(23, 59, 59, 999);
 
-  const [classSlots, bookingCounts, userPasses, passPackages, existingBookings] =
-    await Promise.all([
-      prisma.classSlot.findMany({
-        where: { studioId: studio.id },
-        include: { room: true, instructor: true },
-      }),
-      prisma.classBooking.groupBy({
-        by: ["classSlotId", "date"],
-        where: {
-          studioId: studio.id,
-          date: { gte: days[0], lte: windowEnd },
-          status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
-        },
-        _count: { id: true },
-      }),
-      prisma.userPass.findMany({
-        where: { userId: session.user.id, studioId: studio.id },
-        include: { passPackage: true },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.passPackage.findMany({
-        where: { studioId: studio.id, isActive: true },
-        orderBy: { price: "asc" },
-      }),
-      prisma.classBooking.findMany({
-        where: {
-          userId: session.user.id,
-          studioId: studio.id,
-          date: { gte: days[0], lte: windowEnd },
-          status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
-        },
-        select: { classSlotId: true, date: true },
-      }),
-    ]);
+  const [
+    classSlots,
+    bookingCounts,
+    userPasses,
+    passPackages,
+    existingBookings,
+  ] = await Promise.all([
+    prisma.classSlot.findMany({
+      where: { studioId: studio.id },
+      include: { room: true, instructor: true },
+    }),
+    prisma.classBooking.groupBy({
+      by: ["classSlotId", "date"],
+      where: {
+        studioId: studio.id,
+        date: { gte: days[0], lte: windowEnd },
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
+      },
+      _count: { id: true },
+    }),
+    prisma.userPass.findMany({
+      where: { userId: session.user.id, studioId: studio.id },
+      include: { passPackage: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.passPackage.findMany({
+      where: { studioId: studio.id, isActive: true },
+      orderBy: { price: "asc" },
+    }),
+    prisma.classBooking.findMany({
+      where: {
+        userId: session.user.id,
+        studioId: studio.id,
+        date: { gte: days[0], lte: windowEnd },
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
+      },
+      select: { classSlotId: true, date: true },
+    }),
+  ]);
 
   // Build occurrence list for each of the 3 days
-  const occurrences = [];
+  const occurrences: ClassOccurrenceDTO[] = [];
   for (const day of days) {
     const jsDay = day.getDay();
     const matching = classSlots.filter((s) => DOW_JS[s.dayOfWeek] === jsDay);
@@ -88,13 +94,13 @@ export default async function ClassesPage({
         bookingCounts.find(
           (bc) =>
             bc.classSlotId === slot.id &&
-            new Date(bc.date).toDateString() === day.toDateString()
+            new Date(bc.date).toDateString() === day.toDateString(),
         )?._count.id ?? 0;
 
       const alreadyBooked = existingBookings.some(
         (b) =>
           b.classSlotId === slot.id &&
-          new Date(b.date).toDateString() === day.toDateString()
+          new Date(b.date).toDateString() === day.toDateString(),
       );
 
       occurrences.push({
@@ -117,8 +123,7 @@ export default async function ClassesPage({
   }
 
   occurrences.sort((a, b) => {
-    const dateCompare =
-      new Date(a.date).getTime() - new Date(b.date).getTime();
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
     if (dateCompare !== 0) return dateCompare;
     return a.startTime.localeCompare(b.startTime);
   });
