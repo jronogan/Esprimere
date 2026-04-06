@@ -50,12 +50,19 @@ export async function bookStudio({
         },
       },
     ],
-    metadata: { userId, studioId, roomId, startTime, endTime, date: date.toISOString() },
+    metadata: {
+      userId,
+      studioId,
+      roomId,
+      startTime,
+      endTime,
+      date: date.toISOString(),
+    },
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/bookings`,
   });
 
-  return prisma.studioBooking.create({
+  await prisma.studioBooking.create({
     data: {
       userId,
       studioId,
@@ -68,4 +75,6 @@ export async function bookStudio({
       stripeSessionId: stripeSession.id,
     },
   });
+
+  return { url: stripeSession.url };
 }

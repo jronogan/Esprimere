@@ -6,10 +6,8 @@ import { stripe } from "@/lib/stripe";
 import { PaymentType } from "@/app/generated/prisma/client";
 
 export async function purchasePass({
-  studioId,
   passPackageId,
 }: {
-  studioId: string;
   passPackageId: string;
 }) {
   const session = await auth();
@@ -20,8 +18,7 @@ export async function purchasePass({
     where: { id: passPackageId },
   });
 
-  if (!passPackage || passPackage.studioId !== studioId)
-    throw new Error("Pass not found.");
+  if (!passPackage) throw new Error("Pass not found.");
 
   const stripeSession = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -35,6 +32,9 @@ export async function purchasePass({
         },
       },
     ],
+    metadata: {
+      studioId: passPackage.studioId,
+    },
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/passes/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/passes`,
   });
@@ -42,7 +42,7 @@ export async function purchasePass({
   await prisma.payment.create({
     data: {
       userId,
-      studioId,
+      studioId: passPackage.studioId,
       type: PaymentType.PASS_PURCHASE,
       amount: passPackage.price,
       stripeSessionId: stripeSession.id,
